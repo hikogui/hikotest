@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/hikotestTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/hikotestResources.cmake")
+
+check_required_components(hikotest)
+
