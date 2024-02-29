@@ -4,9 +4,9 @@ HikoTest Unit Testing Framework
 I created my own unit testing framework since I had several issues
 with other unit-testing frame works with testing the HikoGUI library.
 
-Design decissions:
- * Do not catch exceptions or other traps. To make it easy to
-   debug crashing tests.
+Design decisions:
+ * Simple test-dispatch architecture so that it is easy to debug.
+   In debug-mode no exceptions are caught, and break-points are set.
  * Limit the amount of stack space required. To not cause the
    address sanitizer to trigger on stack overflow with a bunch of simple tests.
  * Comparisons for: values, ranges, absolute difference and ranges
@@ -19,19 +19,38 @@ Design decissions:
  * A test-suite is a class, a test is a member-function.
   
 
-Example test suite:
+Example
+-------
+
 ```cpp
 #include <hikotest/hikotest.hpp>
 
-class my_suite : public ::test::suite<my_suite> {
-public:
+// Adds the test suite "my" the _suite suffix is automatically removed.
+TEST_SUITE(my_suite) {
+    // Adds the test "first" the _test suffix is automatically removed.
     TEST_CASE(first_test)
     {
         auto foo = 42;
         auto bar = 42.2f;
 
-        ASSERT(foo == 42);
-        ASSERT(0.5, bar == 42);
+        // The compare operator is overloaded by the test framework;
+        // on error the left and right hand side values are displayed.
+        REQUIRE(foo == 42);
+
+        // The !=, <, >, <=, >= operators may also be used with exact comparisons.
+        REQUIRE(foo < 43);
+
+        // The optional arguments to REQUIRE() are passed to the constructor
+        // of ::test::error. In this case the comparison compares the values
+        // with an absolute error of maximum 0.5.
+        REQUIRE(bar == 42, 0.5);
+
+        for (auto i = 0; i != 10; ++i) {
+            // You may also pass in a std::string to the ::test::error constructor.
+            // This string is displayed on error. Useful for tracking the iteration
+            // of a loop.
+            REQUIRE(i < 10, std::format("i = {}", i));
+        }
     }
 
     TEST_CASE(second_test)
@@ -39,42 +58,59 @@ public:
         auto foo = std::array{1, 42};
         auto bar = std::array{0.9f, 42.2f};
 
-        ASSERT(foo == std::array{1, 42});
-        ASSERT(0.5, bar == std::array{1, 42});
+        // The comparison will also handle the comparison of ranges.
+        REQUIRE(foo == std::array{1, 42});
+
+        // Range comparison can even be compared with an absolute error value.
+        REQUIRE(bar == std::array{1, 42}, 0.5);
     }
 
-    TEST_CASE(third_test)
+    TEST_CASE(second_test)
     {
-        ASSERT_THROW(std::runtime_error, throw std::runtime_error{"oops"});
+        auto foo = std::vector{};
+        auto bar = 42;
+
+        // If you do not use a comparator the expression is converted to a bool.
+        REQUIRE(foo.empty());
+
+        // If you want to explicitly test operator==() of a custom type, then
+        // you can add brackets like this.
+        REQUIRE((bar == 42));
+    }
+
+    TEST_CASE(forth_test)
+    {
+        // We use a separate macro for testing if a expression throws an exception.
+        REQUIRE_THROWS(throw std::runtime_error{"oops"}, std::runtime_error);
     }
 };
 ```
 
-Asserts
--------
+REQUIRE macros
+--------------
 
-### ASSERT(expression, [error])
+### REQUIRE(expression, ...)
 
 Expression may be:
  * A comparison expression using one of the following operators: `==`, `!=`, `<`, `>`, `<=`, `>=`.
- * A boolean expression; resulting in a type that can be explicitly converted to `bool`.
+ * A boolean expression; resulting in a type that can be implicitly converted to `bool`.
 
-You may escape a comparison expression by surrounding it with parentheses so that
+You may escape a comparison expression by surrounding it with parentheses `(` `)` so that
 it will be interpreted as a boolean expression.
 
-Internally `ASSERT()` will use the spaceship operator `<=>` on the left side of the expression.
-This is done to separate the left operand from the comparison, so that the comparison can
-be replaced by the unit testing framework.
+Internally `REQUIRE()` will concatenate `<=> ::test::error(__VA_ARGS__)` to the expression.
+This is done to separate the right operand from the comparison, so that the comparison operator
+will be replaced by the unit testing framework.
 
-By `error` argument may be one of the following:
- * If no `error` argument is given then an exact match is expected.
- * If a floating point number if used as the `error` argument then
-   the match is done by subtracted the operands and comparing it with
-   the `error` value.
- * If a `::test::error<>` class is used then comparison is done using
-   the error value.
+The optional arguments of `REQUIRE()` are passed to the `::test::error` constructor.
+The `::test::error` constructor accepts the following arguments:
+ * Empty: The comparison will do an exact match.
+ * A floating point number: The equality comparison will take into account
+   an absolute error.
+ * A `::test::error` object: Will use the copy constructor.
+ * (optional) `std::string` object: Will display the string on error. 
 
-### ASSERT\_THROW(expression)
+### REQUIRE\_THROWS(expression, exception-type)
 
 Command Line Arguments
 ----------------------
