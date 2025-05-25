@@ -23,6 +23,7 @@
 #include <print>
 #include <expected>
 #include <optional>
+#include <exception>
 #include <stdexcept>
 
 namespace test {
@@ -111,7 +112,7 @@ namespace test {
 using hr_clock_type = std::chrono::high_resolution_clock;
 using hr_duration_type = std::chrono::duration<double>;
 using hr_time_point_type = std::chrono::time_point<hr_clock_type>;
-using utc_clock_type = std::chrono::utc_clock;
+using utc_clock_type = std::chrono::system_clock;
 using utc_time_point_type = utc_clock_type::time_point;
 
 /** Break the unit-test on failure.
