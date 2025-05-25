@@ -23,6 +23,7 @@
 #include <print>
 #include <expected>
 #include <optional>
+#include <exception>
 #include <stdexcept>
 
 namespace test {
@@ -111,7 +112,7 @@ namespace test {
 using hr_clock_type = std::chrono::high_resolution_clock;
 using hr_duration_type = std::chrono::duration<double>;
 using hr_time_point_type = std::chrono::time_point<hr_clock_type>;
-using utc_clock_type = std::chrono::utc_clock;
+using utc_clock_type = std::chrono::system_clock;
 using utc_time_point_type = utc_clock_type::time_point;
 
 /** Break the unit-test on failure.
@@ -149,6 +150,8 @@ template<typename T>
 
     // constexpr std::string class_name() [with T = foo<bar>; std::string_view = std::basic_string_view<char>]
     if (auto first = signature.find("::type_name() [with T = "); first != signature.npos) {
+        //                                     1         2
+        //                           0123456789012345678901234
         first += 24;
         auto const last = signature.find("; ", first);
         if (last == signature.npos) {
@@ -158,8 +161,23 @@ template<typename T>
         return type_name_strip(std::string{signature.substr(first, last - first)});
     }
 
+    // std::string test::type_name() [T = utf8_suite]
+    if (auto first = signature.find("::type_name() [T = "); first != signature.npos) {
+        //                                     1         
+        //                           01234567890123456789
+        first += 19;
+        auto const last = signature.find("]", first);
+        if (last == signature.npos) {
+            std::println(stderr, "{}({}): error: Could not parse type_name from '{}'", __FILE__, __LINE__, signature);
+            std::terminate();
+        }
+        return type_name_strip(std::string{signature.substr(first, last - first)});
+    }
+
     // __cdecltest::type_name(void)[T=foo<bar>]
     if (auto first = signature.find("::type_name(void) [T = "); first != signature.npos) {
+        //                                     1         2
+        //                           012345678901234567890123
         first += 23;
         auto const last = signature.find("]", first);
         if (last == signature.npos) {
@@ -171,6 +189,8 @@ template<typename T>
 
     // class std::basic_string<char,struct std::char_traits<char> > __cdecl test::type_name<struct foo<struct bar>>(void) noexcept
     if (auto first = signature.find("::type_name<"); first != signature.npos) {
+        //                                     1
+        //                           0123456789012
         first += 12;
         auto const last = signature.rfind(">(void)");
         return type_name_strip(std::string{signature.substr(first, last - first)});
@@ -664,7 +684,7 @@ class require_error : public std::logic_error {
     using std::logic_error::logic_error;
 };
 
-TEST_FORCE_INLINE void require(char const* file, int line, std::expected<void, std::string> result)
+TEST_FORCE_INLINE inline void require(char const* file, int line, std::expected<void, std::string> result)
 {
     if (result) {
         return;
