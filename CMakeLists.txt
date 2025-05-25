@@ -25,6 +25,7 @@ set_target_properties(hikotest PROPERTIES RELWITHDEBINFO_POSTFIX "i")
 set_target_properties(hikotest PROPERTIES VERSION "${HIKOTEST_VERSION}")
 set_target_properties(hikotest PROPERTIES SOVERSION "${HIKOTEST_MAJOR_VERSION}")
 set_target_properties(hikotest PROPERTIES FRAMEWORK TRUE)
+set_target_properties(hikotest PROPERTIES FRAMEWORK_VERSION A)
 set_target_properties(hikotest PROPERTIES MACOSX_FRAMEWORK_IDENTIFIER "org.hikogui.hikotest")
 
 target_include_directories(hikotest PUBLIC
@@ -34,12 +35,14 @@ target_include_directories(hikotest PUBLIC
 set(INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/hikotest/CMake")
 set(INSTALL_MODULEDIR "module")
 
-install(TARGETS hikotest EXPORT hikotest
+install(TARGETS hikotest
+    EXPORT hikotest
     FILE_SET hikotest_include_files
     RUNTIME
     ARCHIVE
     LIBRARY
     RESOURCE DESTINATION "${INSTALL_RESOURCEDIR}"
+    FRAMEWORK DESTINATION Library/Frameworks
 )
 
 install(
