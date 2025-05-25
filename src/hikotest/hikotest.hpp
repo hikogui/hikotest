@@ -665,7 +665,7 @@ class require_error : public std::logic_error {
     using std::logic_error::logic_error;
 };
 
-TEST_FORCE_INLINE void require(char const* file, int line, std::expected<void, std::string> result)
+TEST_FORCE_INLINE inline void require(char const* file, int line, std::expected<void, std::string> result)
 {
     if (result) {
         return;
