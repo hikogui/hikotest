@@ -43,33 +43,44 @@ namespace test {
 
 [[nodiscard]] static std::string xml_escape(std::string str, char quote_char = '\0') noexcept
 {
-    for (auto it = str.begin(); it != str.end(); ++it) {
+    using namespace std::literals;
+
+    auto quot = "&quot;"s;
+    auto apos = "&apos;"s;
+    auto lt = "&lt;"s;
+    auto gt = "&gt;"s;
+    auto amp = "&amp;"s;
+
+    auto it = str.begin();
+    while (it != str.end()) {
         auto const c = *it;
 
         if (c == '"' and quote_char == '"') {
             it = str.erase(it);
-            it = str.insert_range(it, std::string_view{"&quot;"});
-            it += 5;
+            it = str.insert(it, quot.begin(), quot.end());
+            it += quot.size();
 
         } else if (c == '\'' and quote_char == '\'') {
             it = str.erase(it);
-            it = str.insert_range(it, std::string_view{"&apos;"});
-            it += 5;
+            it = str.insert(it, apos.begin(), apos.end());
+            it += apos.size();
 
         } else if (c == '<') {
             it = str.erase(it);
-            it = str.insert_range(it, std::string_view{"&lt;"});
-            it += 3;
+            it = str.insert(it, lt.begin(), lt.end());
+            it += lt.size();
 
         } else if (c == '>') {
             it = str.erase(it);
-            it = str.insert_range(it, std::string_view{"&gt;"});
-            it += 3;
+            it = str.insert(it, gt.begin(), gt.end());
+            it += gt.size();
 
         } else if (c == '&') {
             it = str.erase(it);
-            it = str.insert_range(it, std::string_view{"&amp;"});
-            it += 4;
+            it = str.insert(it, amp.begin(), amp.end());
+            it += amp.size();
+        } else {
+            ++it;
         }
     }
 
